@@ -71,6 +71,14 @@ body {
 .input:focus { border-color: var(--accent2); }
 
 .muted { opacity: .75; }
+
+/* banner de status de conexão */
+.conn-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--bad); color: #fff; padding: 10px; text-align: center;
+  font-weight: 700; font-size: 14px; display: none;
+}
+.conn-banner.show { display: block; animation: pulse 1.5s ease-in-out infinite; }
 .big-word { font-size: clamp(48px, 14vw, 140px); font-weight: 900; color: var(--accent2); line-height: 1; word-break: break-word; }
 .timer-num { font-size: clamp(40px, 10vw, 90px); font-weight: 900; }
 

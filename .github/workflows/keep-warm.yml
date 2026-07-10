@@ -1,0 +1,29 @@
+name: keep-warm
+
+# Mantém o servidor do Render (plano free) acordado, dando um "ping" no /healthz.
+# Assim ele não hiberna e os jogadores nunca pegam uma página quebrada (404 em cache).
+#
+# Observações:
+# - O cron do GitHub Actions costuma atrasar alguns minutos e é best-effort.
+# - Workflows agendados são desativados após ~60 dias sem commits no repo.
+# - Se quiser algo mais pontual, use um serviço externo (UptimeRobot, cron-job.org)
+#   apontando pra https://cante-alto.onrender.com/healthz a cada 10 min.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /healthz
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://cante-alto.onrender.com/healthz) || code=000
+            echo "tentativa $i -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "servidor não respondeu 200 (pode estar acordando)"

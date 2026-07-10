@@ -3,6 +3,8 @@
 <title>Cante Alto</title>
 <link rel="stylesheet" href="/style.css">
 
+<div id="conn" class="conn-banner">🔌 Conectando ao servidor... (pode levar até 1 min se estiver acordando)</div>
+
 <!-- JOIN -->
 <div id="join" class="screen active">
   <img src="/logo.png" alt="CANTE ALTO" class="logo-img">
@@ -68,6 +70,12 @@ const screens = ['join','wait','tap','raced','psinging','vote','votewait','presu
 function show(name){ screens.forEach(s => $(s).classList.toggle('active', s === name)); }
 
 let myId = null, myName = '', tapped = false, amWinner = false;
+
+// ---- status de conexão ----
+let connected = false;
+socket.on('connect', () => { connected = true; $('conn').classList.remove('show'); });
+socket.on('disconnect', () => $('conn').classList.add('show'));
+setTimeout(() => { if (!connected) $('conn').classList.add('show'); }, 1500);
 
 // Código vindo do QR (?room=ABCD) já preenche o campo
 const roomParam = new URLSearchParams(location.search).get('room');

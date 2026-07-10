@@ -3,6 +3,8 @@
 <title>Cante Alto — Host</title>
 <link rel="stylesheet" href="/style.css">
 
+<div id="conn" class="conn-banner">🔌 Conectando ao servidor... (pode levar até 1 min se estiver acordando)</div>
+
 <!-- Botão pequeno de fechar sala (fixo, some na tela de setup) -->
 <button id="closeRoom" class="btn secondary" style="position:fixed;top:14px;right:14px;padding:8px 14px;font-size:14px;box-shadow:none;display:none;z-index:10">✕ Fechar sala</button>
 
@@ -138,12 +140,26 @@ function show(name){
 let roundInterval = null, singInterval = null, voteInterval = null;
 function clearTimers(){ clearInterval(roundInterval); clearInterval(singInterval); clearInterval(voteInterval); }
 
+// ---- status de conexão ----
+let connected = false;
+socket.on('connect', () => { connected = true; $('conn').classList.remove('show'); });
+socket.on('disconnect', () => $('conn').classList.add('show'));
+setTimeout(() => { if (!connected) $('conn').classList.add('show'); }, 1500);
+
 // ---- SETUP: escolher modo local/web ----
 $('originShow').textContent = location.origin;
 $('modeWeb').addEventListener('mouseenter', () => $('webNote').style.display = 'block');
 $('modeLocal').onclick = () => createRoom('local');
 $('modeWeb').onclick   = () => createRoom('web');
 function createRoom(mode){ socket.emit('host:create', { mode }); }
+
+// Na versão online (domínio público), o modo Local mostra um IP interno inútil.
+// Então escondemos o Local e deixamos só o Web quando não estamos rodando local.
+const isPrivateHost = /^(localhost$|127\.|0\.0\.0\.0|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname) || location.hostname.endsWith('.local');
+if (!isPrivateHost) {
+  $('modeLocal').style.display = 'none';
+  $('modeWeb').style.maxWidth = '420px';
+}
 
 // fechar sala -> volta pro setup
 $('closeRoom').onclick = () => {

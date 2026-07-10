@@ -318,6 +318,9 @@ app.get('/info', (req, res) => {
   res.json({ lanUrl: `http://${localIP()}:${PORT}/` });
 });
 
+// Health check — usado pelo ping que mantém o servidor acordado no Render free
+app.get('/healthz', (req, res) => res.type('text').send('ok'));
+
 // QR de qualquer URL: /qr?data=<url-encoded>
 app.get('/qr', async (req, res) => {
   const data = (req.query.data || '').toString();
