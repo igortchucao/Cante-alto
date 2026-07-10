@@ -1,0 +1,190 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cante Alto</title>
+<link rel="stylesheet" href="/style.css">
+
+<!-- JOIN -->
+<div id="join" class="screen active">
+  <img src="/logo.png" alt="CANTE ALTO" class="logo-img">
+  <div class="subtitle">Entre na roda</div>
+  <input id="code" class="input" maxlength="4" placeholder="CÓDIGO" autocomplete="off"
+         autocapitalize="characters" style="text-transform:uppercase;letter-spacing:6px;font-weight:800">
+  <input id="name" class="input" maxlength="20" placeholder="Seu nome" autocomplete="off">
+  <button id="joinBtn" class="btn big">Entrar 🎤</button>
+  <div id="joinErr" class="subtitle" style="color:var(--bad);display:none"></div>
+</div>
+
+<!-- WAIT -->
+<div id="wait" class="screen">
+  <div class="logo">Beleza, <span id="myName"></span>! 👋</div>
+  <div class="subtitle">Aguardando o host começar a rodada...</div>
+</div>
+
+<!-- TAP: a palavra vira botao -->
+<div id="tap" class="screen">
+  <div class="subtitle">Sabe uma música com essa palavra?</div>
+  <button id="tapBtn" class="btn big" style="min-height:45dvh;font-size:clamp(36px,12vw,90px);background:var(--accent2);color:#1a0033"></button>
+  <div class="muted">Aperte primeiro pra cantar!</div>
+</div>
+
+<!-- RESULT DA CORRIDA -->
+<div id="raced" class="screen">
+  <div id="racedMsg" class="big-word" style="font-size:clamp(32px,10vw,72px)"></div>
+</div>
+
+<!-- SINGING -->
+<div id="psinging" class="screen">
+  <div id="singMsg" class="big-word" style="font-size:clamp(30px,9vw,64px)"></div>
+</div>
+
+<!-- VOTE -->
+<div id="vote" class="screen">
+  <div class="subtitle"><span id="voteWho"></span> mandou bem?</div>
+  <div style="display:flex;flex-direction:column;gap:16px;width:100%;max-width:400px">
+    <button id="voteGood" class="btn good big">👍 Mandou bem</button>
+    <button id="voteBad" class="btn bad big">👎 Foi mal</button>
+  </div>
+  <div id="voteHint" class="subtitle" style="opacity:.8">Pode trocar quantas vezes quiser até o tempo acabar! 😈</div>
+</div>
+
+<!-- WAIT VOTE (o cantor nao vota) -->
+<div id="votewait" class="screen">
+  <div class="big-word" style="font-size:clamp(30px,9vw,64px)">Aguarde os votos... 🥁</div>
+</div>
+
+<!-- RESULT -->
+<div id="presult" class="screen">
+  <div id="presultMsg" class="big-word" style="font-size:clamp(34px,10vw,72px)"></div>
+  <button id="readyBtn" class="btn big">Próxima ▶</button>
+  <div class="subtitle">Prontos: <span id="readyCountP">0 / 0</span><br>
+    <span class="muted" style="font-size:14px">A próxima começa quando a maioria marcar</span></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = id => document.getElementById(id);
+const screens = ['join','wait','tap','raced','psinging','vote','votewait','presult'];
+function show(name){ screens.forEach(s => $(s).classList.toggle('active', s === name)); }
+
+let myId = null, myName = '', tapped = false, amWinner = false;
+
+// Código vindo do QR (?room=ABCD) já preenche o campo
+const roomParam = new URLSearchParams(location.search).get('room');
+if (roomParam) $('code').value = roomParam.toUpperCase();
+
+$('joinBtn').onclick = join;
+$('name').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+function join(){
+  const code = $('code').value.trim().toUpperCase();
+  const name = $('name').value.trim();
+  if (!code) { $('code').focus(); return; }
+  if (!name) { $('name').focus(); return; }
+  $('joinErr').style.display = 'none';
+  socket.emit('player:join', { code, name });
+}
+
+socket.on('join:error', ({ message }) => {
+  $('joinErr').textContent = message;
+  $('joinErr').style.display = 'block';
+});
+
+socket.on('player:joined', ({ id, name }) => {
+  myId = id; myName = name;
+  $('myName').textContent = name;
+  show('wait');
+});
+
+socket.on('host:left', () => {
+  show('join');
+  $('joinErr').textContent = 'O host saiu. A sala foi encerrada.';
+  $('joinErr').style.display = 'block';
+});
+
+// nova rodada: palavra vira botao gigante
+socket.on('round:start', ({ word }) => {
+  tapped = false; amWinner = false;
+  $('tapBtn').disabled = false;
+  $('tapBtn').textContent = word.toUpperCase();
+  show('tap');
+});
+
+$('tapBtn').onclick = () => {
+  if (tapped) return;
+  tapped = true;
+  $('tapBtn').disabled = true;
+  socket.emit('player:tap');
+};
+
+socket.on('round:empty', () => show('wait'));
+
+socket.on('round:winner', ({ winnerId, winnerName }) => {
+  amWinner = (winnerId === myId);
+  show('raced');
+  $('racedMsg').innerHTML = amWinner
+    ? '🎤 VOCÊ vai cantar!<br>Prepara a voz!'
+    : `⚡ ${escapeHtml(winnerName)}<br>foi mais rápido!`;
+  $('racedMsg').style.color = amWinner ? 'var(--accent2)' : '#fff';
+});
+
+socket.on('singing:start', ({ winnerName }) => {
+  show('psinging');
+  $('singMsg').innerHTML = amWinner
+    ? '🎤 CANTA ALTO!<br>É a sua vez!'
+    : `🔊 Ouça<br>${escapeHtml(winnerName)} cantar`;
+  $('singMsg').style.color = amWinner ? 'var(--accent)' : '#fff';
+});
+
+socket.on('voting:start', ({ winnerName }) => {
+  if (amWinner) { show('votewait'); return; }
+  $('voteWho').textContent = winnerName;
+  setSelected(null);
+  show('vote');
+});
+
+function setSelected(value){
+  // botão escolhido fica destacado; o outro fica apagado — mas os dois clicáveis
+  $('voteGood').style.outline = value === 'good' ? '5px solid #fff' : 'none';
+  $('voteBad').style.outline  = value === 'bad'  ? '5px solid #fff' : 'none';
+  $('voteGood').style.opacity = !value || value === 'good' ? '1' : '.45';
+  $('voteBad').style.opacity  = !value || value === 'bad'  ? '1' : '.45';
+  $('voteHint').textContent = value
+    ? 'Voto registrado ✔ — pode trocar até o tempo acabar! 😈'
+    : 'Pode trocar quantas vezes quiser até o tempo acabar! 😈';
+}
+
+function sendVote(value){
+  setSelected(value);
+  socket.emit('player:vote', { value });
+}
+$('voteGood').onclick = () => sendVote('good');
+$('voteBad').onclick  = () => sendVote('bad');
+
+let iAmReady = false;
+socket.on('voting:results', ({ winnerId, nailedIt, scored }) => {
+  const me = (winnerId === myId);
+  show('presult');
+  iAmReady = false;
+  setReadyBtn();
+  if (me){
+    const base = nailedIt ? '🎉 Mandou bem!' : '😬 A galera não curtiu...';
+    $('presultMsg').innerHTML = scored ? base + '<br>+1 ponto 🏆' : base;
+    $('presultMsg').style.color = nailedIt ? 'var(--good)' : 'var(--bad)';
+  } else {
+    $('presultMsg').innerHTML = nailedIt ? '👍 A roda aprovou!' : '👎 Reprovado!';
+    $('presultMsg').style.color = '#fff';
+  }
+});
+
+function setReadyBtn(){
+  $('readyBtn').textContent = iAmReady ? '✔ Pronto (toque pra cancelar)' : 'Próxima ▶';
+  $('readyBtn').classList.toggle('good', iAmReady);
+}
+$('readyBtn').onclick = () => { iAmReady = !iAmReady; setReadyBtn(); socket.emit('player:ready'); };
+
+socket.on('ready:update', ({ ready, total }) => { $('readyCountP').textContent = `${ready} / ${total}`; });
+
+socket.on('lobby:update', ({ state }) => { if (state === 'lobby' && myId) show('wait'); });
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>

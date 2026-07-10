@@ -1,0 +1,305 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Cante Alto — Host</title>
+<link rel="stylesheet" href="/style.css">
+
+<!-- Botão pequeno de fechar sala (fixo, some na tela de setup) -->
+<button id="closeRoom" class="btn secondary" style="position:fixed;top:14px;right:14px;padding:8px 14px;font-size:14px;box-shadow:none;display:none;z-index:10">✕ Fechar sala</button>
+
+<!-- SETUP: escolher modo -->
+<div id="setup" class="screen active">
+  <img src="/logo.png" alt="CANTE ALTO" class="logo-img">
+
+  <div class="subtitle">Como os jogadores vão se conectar?</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;width:100%;max-width:640px">
+    <button id="modeLocal" class="btn secondary" style="flex:1;min-width:220px;padding:26px">
+      📶 Local<br><span class="muted" style="font-weight:400;font-size:15px">Todos no mesmo Wi‑Fi</span>
+    </button>
+    <button id="modeWeb" class="btn secondary" style="flex:1;min-width:220px;padding:26px">
+      🌐 Web<br><span class="muted" style="font-weight:400;font-size:15px">Pela internet (à distância)</span>
+    </button>
+  </div>
+  <div id="webNote" class="card muted" style="display:none;font-size:14px;max-width:640px">
+    Modo Web: os jogadores entram pelo mesmo endereço que <b>você abriu esta página</b>
+    (<span id="originShow"></span>). Só funciona se este servidor estiver acessível pela
+    internet — publicado num host ou exposto por um túnel (ex.: ngrok/cloudflared).
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="lobby" class="screen">
+  <img src="/logo.png" alt="CANTE ALTO" class="logo-img" style="width:min(55vw,300px)">
+  <div class="subtitle">Código da sala:</div>
+  <div id="roomCode" style="font-size:clamp(48px,12vw,96px);font-weight:900;letter-spacing:8px;color:var(--accent2)">----</div>
+
+  <div class="card" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center">
+    <div>
+      <div class="muted" style="margin-bottom:8px">Entre pelo celular <span id="modeTag"></span>:</div>
+      <div id="joinUrl" style="font-size:20px;font-weight:800;color:var(--accent2)">...</div>
+    </div>
+    <img id="qr" alt="QR code" style="width:180px;height:180px;border-radius:12px;background:#fff;display:none">
+  </div>
+
+  <div class="card">
+    <div class="muted" style="margin-bottom:10px">Jogadores na roda: <span id="count">0</span></div>
+    <div id="players" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center"></div>
+  </div>
+
+  <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center">
+    <div style="display:flex;gap:8px;align-items:center">
+      <label class="muted">🎤 Cantar:</label>
+      <select id="singSecs" class="input" style="width:auto;padding:12px 16px">
+        <option value="15">15s</option>
+        <option value="20" selected>20s</option>
+        <option value="30">30s</option>
+        <option value="45">45s</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <label class="muted">🗳️ Votar:</label>
+      <select id="voteSecs" class="input" style="width:auto;padding:12px 16px">
+        <option value="10">10s</option>
+        <option value="15" selected>15s</option>
+        <option value="20">20s</option>
+        <option value="30">30s</option>
+      </select>
+    </div>
+  </div>
+
+  <label class="card" style="display:flex;align-items:center;gap:12px;max-width:560px;cursor:pointer;justify-content:center">
+    <input type="checkbox" id="scoring" checked style="width:24px;height:24px;accent-color:var(--accent)">
+    <span>🏆 <b>Votos definem a pontuação?</b><br>
+      <span class="muted" style="font-size:13px">Ligado: só ganha o ponto com maioria favorável. Desligado: quem aperta primeiro já ganha o ponto.</span>
+    </span>
+  </label>
+
+  <button id="startBtn" class="btn big" disabled>Aguardando jogadores...</button>
+</div>
+
+<!-- ROUND: palavra + timer -->
+<div id="round" class="screen">
+  <div class="subtitle">Cante uma música com...</div>
+  <div id="roundWord" class="big-word"></div>
+  <div class="timer-num" id="roundTimer" style="color:var(--accent)"></div>
+  <div class="muted">Clique na palavra no seu celular! ⚡</div>
+</div>
+
+<!-- REVEAL: vencedor + 3 2 1 + CANTE ALTO -->
+<div id="reveal" class="screen">
+  <div id="revealStage"></div>
+</div>
+
+<!-- SINGING -->
+<div id="singing" class="screen">
+  <div class="subtitle">🎤 Cantando agora:</div>
+  <div id="singName" class="big-word" style="color:var(--accent)"></div>
+  <div class="muted">com a palavra “<b id="singWord"></b>”</div>
+  <div class="timer-num" id="singTimer" style="color:var(--accent2)"></div>
+  <button id="skipSing" class="btn secondary">Pular pra votação</button>
+</div>
+
+<!-- VOTING -->
+<div id="voting" class="screen">
+  <div class="big-word" style="font-size:clamp(32px,8vw,72px)"><span id="voteName"></span> mandou bem?</div>
+  <div class="timer-num" id="voteTimer" style="color:var(--accent)"></div>
+  <div id="voteGrid" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;width:100%"></div>
+  <div class="muted">Pode trocar o voto até o tempo acabar! 😈</div>
+  <button id="endVote" class="btn secondary">Encerrar já</button>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen">
+  <div id="verdict" class="big-word" style="font-size:clamp(40px,10vw,90px)"></div>
+  <div class="card" style="display:flex;justify-content:center;gap:40px;font-size:28px;font-weight:800">
+    <div>👍 <span id="goodCount">0</span></div>
+    <div>👎 <span id="badCount">0</span></div>
+  </div>
+  <div class="card" id="scoreCard">
+    <div class="muted" style="margin-bottom:10px">Placar</div>
+    <div id="scoreboard" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+  <div class="card">
+    <div class="muted">Esperando a galera marcar a próxima...</div>
+    <div style="font-size:28px;font-weight:800;margin-top:6px">Prontos: <span id="readyCount">0 / 0</span></div>
+  </div>
+  <button id="homeBtn" class="btn secondary">Encerrar jogo</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = id => document.getElementById(id);
+const screens = ['setup','lobby','round','reveal','singing','voting','results'];
+function show(name){
+  screens.forEach(s => $(s).classList.toggle('active', s === name));
+  $('closeRoom').style.display = name === 'setup' ? 'none' : 'block';
+}
+
+let roundInterval = null, singInterval = null, voteInterval = null;
+function clearTimers(){ clearInterval(roundInterval); clearInterval(singInterval); clearInterval(voteInterval); }
+
+// ---- SETUP: escolher modo local/web ----
+$('originShow').textContent = location.origin;
+$('modeWeb').addEventListener('mouseenter', () => $('webNote').style.display = 'block');
+$('modeLocal').onclick = () => createRoom('local');
+$('modeWeb').onclick   = () => createRoom('web');
+function createRoom(mode){ socket.emit('host:create', { mode }); }
+
+// fechar sala -> volta pro setup
+$('closeRoom').onclick = () => {
+  if (!confirm('Fechar a sala? Os jogadores serão desconectados.')) return;
+  socket.emit('host:close');
+  show('setup');
+};
+
+// liga/desliga pontuação dentro da sala
+$('scoring').onchange = () => socket.emit('host:setScoring', { scoring: $('scoring').checked });
+
+socket.on('host:created', async ({ code, mode, scoring }) => {
+  show('lobby');
+  $('roomCode').textContent = code;
+  $('modeTag').textContent = mode === 'web' ? '(Web 🌐)' : '(Wi‑Fi 📶)';
+  $('scoring').checked = scoring !== false; // reflete o padrão do servidor
+
+  // Base do link de entrada: local usa o IP da rede; web usa o domínio atual.
+  let base;
+  if (mode === 'web') {
+    base = location.origin + '/';
+  } else {
+    try { const r = await fetch('/info'); base = (await r.json()).lanUrl; }
+    catch (_) { base = location.origin + '/'; }
+  }
+  const joinUrl = `${base}?room=${code}`;
+  $('joinUrl').textContent = joinUrl;
+  $('qr').src = '/qr?data=' + encodeURIComponent(joinUrl);
+  $('qr').style.display = 'block';
+
+  renderLobby([]);
+});
+socket.on('lobby:update', ({ players, state }) => { if (state === 'lobby') { show('lobby'); renderLobby(players); } });
+
+function renderLobby(players){
+  $('count').textContent = players.length;
+  $('players').innerHTML = players.map(p =>
+    `<span class="card" style="padding:10px 16px;width:auto;font-weight:700">${escapeHtml(p.name)}</span>`).join('');
+  const ok = players.length >= 1;
+  $('startBtn').disabled = !ok;
+  $('startBtn').textContent = ok ? 'COMEÇAR ▶' : 'Aguardando jogadores...';
+}
+
+$('startBtn').onclick = () => socket.emit('host:startRound');
+$('homeBtn').onclick  = () => socket.emit('host:reset');
+$('endVote').onclick  = () => socket.emit('host:endVoting');
+$('skipSing').onclick = () => { clearTimers(); socket.emit('host:startVoting'); };
+
+// ---- ROUND ----
+socket.on('round:start', ({ word }) => {
+  clearTimers();
+  show('round');
+  $('roundWord').textContent = word.toUpperCase();
+  let t = 25;
+  $('roundTimer').textContent = t;
+  roundInterval = setInterval(() => {
+    t--;
+    $('roundTimer').textContent = t;
+    if (t <= 0){ clearInterval(roundInterval); socket.emit('host:noWinner'); }
+  }, 1000);
+});
+
+socket.on('round:empty', () => {
+  clearTimers();
+  $('roundWord').textContent = 'Ninguém quis 😅';
+  $('roundTimer').textContent = '';
+  setTimeout(() => socket.emit('host:reset'), 1800);
+});
+
+// ---- REVEAL (vencedor -> 3 2 1 -> CANTE ALTO) ----
+socket.on('round:winner', ({ winnerName }) => {
+  clearTimers();
+  show('reveal');
+  const stage = $('revealStage');
+  const singSecs = parseInt($('singSecs').value, 10);
+  stage.innerHTML = `<div class="big-word" style="font-size:clamp(34px,9vw,80px);animation:pop .5s">🏆 ${escapeHtml(winnerName)}<br>foi o mais rápido!</div>`;
+  setTimeout(() => countdown321(stage, winnerName, singSecs), 1600);
+});
+
+function countdown321(stage, winnerName, singSecs){
+  let n = 3;
+  const step = () => {
+    if (n > 0){
+      stage.innerHTML = `<div class="big-word" style="font-size:clamp(80px,30vw,260px);animation:pop .4s">${n}</div>`;
+      n--; setTimeout(step, 850);
+    } else {
+      stage.innerHTML = `<div class="big-word" style="color:var(--accent);font-size:clamp(48px,15vw,150px);animation:pulse .6s infinite">CANTE ALTO!</div>`;
+      setTimeout(() => socket.emit('host:startSinging', { seconds: singSecs }), 1400);
+    }
+  };
+  step();
+}
+
+// ---- SINGING ----
+socket.on('singing:start', ({ winnerName, word, seconds }) => {
+  clearTimers();
+  show('singing');
+  $('singName').textContent = winnerName;
+  $('singWord').textContent = word;
+  let t = seconds;
+  $('singTimer').textContent = t;
+  singInterval = setInterval(() => {
+    t--;
+    $('singTimer').textContent = t;
+    if (t <= 0){ clearInterval(singInterval); socket.emit('host:startVoting'); }
+  }, 1000);
+});
+
+// ---- VOTING ----
+socket.on('voting:start', ({ winnerName, voters }) => {
+  clearTimers();
+  show('voting');
+  $('voteName').textContent = winnerName;
+  renderVoteGrid(voters.map(v => ({ ...v, value: null })));
+
+  let t = parseInt($('voteSecs').value, 10);
+  $('voteTimer').textContent = t;
+  voteInterval = setInterval(() => {
+    t--;
+    $('voteTimer').textContent = t;
+    if (t <= 3) $('voteTimer').style.animation = 'pulse .5s infinite';
+    if (t <= 0){ clearInterval(voteInterval); $('voteTimer').style.animation = ''; socket.emit('host:endVoting'); }
+  }, 1000);
+});
+
+socket.on('voting:update', ({ voters }) => renderVoteGrid(voters));
+
+function renderVoteGrid(voters){
+  $('voteGrid').innerHTML = voters.map(v => {
+    const face = v.value === 'good' ? '👍' : v.value === 'bad' ? '👎' : '⏳';
+    const bg = v.value === 'good' ? 'rgba(46,204,113,.25)' : v.value === 'bad' ? 'rgba(231,76,60,.25)' : 'rgba(255,255,255,.06)';
+    return `<div class="card" style="width:auto;min-width:120px;padding:14px 18px;background:${bg}">
+      <div style="font-size:44px;line-height:1" data-k="${v.id}:${v.value||'x'}">${face}</div>
+      <div style="font-weight:700;margin-top:6px">${escapeHtml(v.name)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---- RESULTS ----
+socket.on('voting:results', ({ winnerName, good, bad, nailedIt, scored, scoring, players }) => {
+  clearTimers();
+  show('results');
+  const pt = scored ? ' <span style="color:var(--good)">+1 ponto!</span>' : '';
+  $('verdict').innerHTML = nailedIt
+    ? `🎉 ${escapeHtml(winnerName)}<br>MANDOU BEM!${pt}`
+    : `😬 ${escapeHtml(winnerName)}<br>foi mal...`;
+  $('verdict').style.color = nailedIt ? 'var(--good)' : 'var(--bad)';
+  $('goodCount').textContent = good;
+  $('badCount').textContent = bad;
+  $('scoreCard').style.display = '';
+  $('scoreboard').innerHTML = players.map((p, i) =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,.06);border-radius:10px">
+       <span>${i === 0 ? '👑 ' : ''}${escapeHtml(p.name)}</span><b>${p.score}</b></div>`).join('');
+});
+
+socket.on('ready:update', ({ ready, total }) => { $('readyCount').textContent = `${ready} / ${total}`; });
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>

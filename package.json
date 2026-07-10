@@ -1,0 +1,17 @@
+{
+  "name": "cante-alto",
+  "version": "1.0.0",
+  "description": "Jogo de festa em roda: a palavra aparece na TV, quem clicar primeiro no celular canta uma musica com ela.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "socket.io": "^4.7.5"
+  }
+}
