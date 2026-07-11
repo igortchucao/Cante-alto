@@ -10,23 +10,25 @@
   --text: #ffffff;
 }
 
-html, body {
-  height: 100%;
-  font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
-  color: var(--text);
-  background: linear-gradient(160deg, var(--bg1), var(--bg2));
-  -webkit-user-select: none; user-select: none;
-  overflow: hidden;
+html {
+  min-height: 100%;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2)) fixed;
 }
 
 body {
   min-height: 100dvh;
+  font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  color: var(--text);
+  background: linear-gradient(160deg, var(--bg1), var(--bg2)) fixed;
+  -webkit-user-select: none; user-select: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   padding: 20px;
   text-align: center;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .screen { display: none; width: 100%; max-width: 900px; animation: fade .25s ease; }
@@ -62,6 +64,10 @@ body {
 .btn.big  { font-size: clamp(24px, 6vw, 40px); padding: 26px 40px; width: 100%; }
 
 .card { background: rgba(255,255,255,.08); border-radius: 20px; padding: 22px; width: 100%; }
+
+/* lobby em 2 colunas (telão / TV) */
+.lobby-cols { display: flex; gap: 34px; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; }
+.lobby-col { display: flex; flex-direction: column; gap: 18px; align-items: center; flex: 1 1 340px; min-width: 300px; max-width: 540px; }
 
 .input {
   width: 100%; font-size: 22px; padding: 16px 18px; border-radius: 14px;

@@ -30,52 +30,60 @@
 
 <!-- LOBBY -->
 <div id="lobby" class="screen">
-  <img src="/logo.png" alt="CANTE ALTO" class="logo-img" style="width:min(55vw,300px)">
-  <div class="subtitle">Código da sala:</div>
-  <div id="roomCode" style="font-size:clamp(48px,12vw,96px);font-weight:900;letter-spacing:8px;color:var(--accent2)">----</div>
+  <img src="/logo.png" alt="CANTE ALTO" class="logo-img" style="width:min(34vw,200px);margin-bottom:4px">
 
-  <div class="card" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center">
-    <div>
-      <div class="muted" style="margin-bottom:8px">Entre pelo celular <span id="modeTag"></span>:</div>
-      <div id="joinUrl" style="font-size:20px;font-weight:800;color:var(--accent2)">...</div>
+  <div class="lobby-cols">
+    <!-- ESQUERDA: entrada -->
+    <div class="lobby-col">
+      <div class="subtitle">Código da sala:</div>
+      <div id="roomCode" style="font-size:clamp(52px,7vw,110px);font-weight:900;letter-spacing:8px;color:var(--accent2);line-height:1">----</div>
+      <div class="card" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center">
+        <div>
+          <div class="muted" style="margin-bottom:8px">Entre pelo celular <span id="modeTag"></span>:</div>
+          <div id="joinUrl" style="font-size:18px;font-weight:800;color:var(--accent2)">...</div>
+        </div>
+        <img id="qr" alt="QR code" style="width:180px;height:180px;border-radius:12px;background:#fff;display:none">
+      </div>
     </div>
-    <img id="qr" alt="QR code" style="width:180px;height:180px;border-radius:12px;background:#fff;display:none">
-  </div>
 
-  <div class="card">
-    <div class="muted" style="margin-bottom:10px">Jogadores na roda: <span id="count">0</span></div>
-    <div id="players" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center"></div>
-  </div>
+    <!-- DIREITA: jogadores + config + começar -->
+    <div class="lobby-col">
+      <div class="card">
+        <div class="muted" style="margin-bottom:10px">Jogadores na roda: <span id="count">0</span></div>
+        <div id="players" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center"></div>
+      </div>
 
-  <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center">
-    <div style="display:flex;gap:8px;align-items:center">
-      <label class="muted">🎤 Cantar:</label>
-      <select id="singSecs" class="input" style="width:auto;padding:12px 16px">
-        <option value="15">15s</option>
-        <option value="20" selected>20s</option>
-        <option value="30">30s</option>
-        <option value="45">45s</option>
-      </select>
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="muted">🎤 Cantar:</label>
+          <select id="singSecs" class="input" style="width:auto;padding:12px 16px">
+            <option value="15">15s</option>
+            <option value="20" selected>20s</option>
+            <option value="30">30s</option>
+            <option value="45">45s</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="muted">🗳️ Votar:</label>
+          <select id="voteSecs" class="input" style="width:auto;padding:12px 16px">
+            <option value="10">10s</option>
+            <option value="15" selected>15s</option>
+            <option value="20">20s</option>
+            <option value="30">30s</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer;justify-content:center">
+        <input type="checkbox" id="scoring" checked style="width:24px;height:24px;accent-color:var(--accent)">
+        <span>🏆 <b>Votos definem a pontuação?</b><br>
+          <span class="muted" style="font-size:13px">Ligado: só ganha o ponto com maioria favorável. Desligado: quem aperta primeiro já ganha o ponto.</span>
+        </span>
+      </label>
+
+      <button id="startBtn" class="btn big" disabled>Aguardando jogadores...</button>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <label class="muted">🗳️ Votar:</label>
-      <select id="voteSecs" class="input" style="width:auto;padding:12px 16px">
-        <option value="10">10s</option>
-        <option value="15" selected>15s</option>
-        <option value="20">20s</option>
-        <option value="30">30s</option>
-      </select>
-    </div>
   </div>
-
-  <label class="card" style="display:flex;align-items:center;gap:12px;max-width:560px;cursor:pointer;justify-content:center">
-    <input type="checkbox" id="scoring" checked style="width:24px;height:24px;accent-color:var(--accent)">
-    <span>🏆 <b>Votos definem a pontuação?</b><br>
-      <span class="muted" style="font-size:13px">Ligado: só ganha o ponto com maioria favorável. Desligado: quem aperta primeiro já ganha o ponto.</span>
-    </span>
-  </label>
-
-  <button id="startBtn" class="btn big" disabled>Aguardando jogadores...</button>
 </div>
 
 <!-- ROUND: palavra + timer -->
