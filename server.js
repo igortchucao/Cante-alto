@@ -115,14 +115,21 @@ function finishVoting(room) {
   io.to(room.code).emit('ready:update', { ready: 0, total: room.players.size });
 }
 
-// Começa uma rodada (usado tanto pelo host quanto pelo avanço automático)
+// Começa uma rodada: mostra "carregando" e só depois revela a palavra (sincronizado)
 function beginRound(room) {
-  room.state = 'round';
+  room.state = 'loading'; // durante o loading os taps são ignorados
   room.winnerId = null;
   room.votes.clear();
   room.ready.clear();
   room.currentWord = pickWord(room);
-  io.to(room.code).emit('round:start', { word: room.currentWord });
+  io.to(room.code).emit('round:loading');
+  const code = room.code;
+  setTimeout(() => {
+    const r = rooms.get(code);
+    if (!r || r !== room || r.state !== 'loading') return; // sala fechada/mudou
+    r.state = 'round';
+    io.to(code).emit('round:start', { word: r.currentWord });
+  }, 2500);
 }
 
 // Maioria dos jogadores marcou "próxima"?

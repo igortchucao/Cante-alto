@@ -22,6 +22,12 @@
   <div class="subtitle">Aguardando o host começar a rodada...</div>
 </div>
 
+<!-- LOADING: carregando a palavra -->
+<div id="ploading" class="screen">
+  <div class="spinner"></div>
+  <div class="big-word" style="font-size:clamp(26px,7vw,44px)">Preparando...</div>
+</div>
+
 <!-- TAP: a palavra vira botao -->
 <div id="tap" class="screen">
   <div class="subtitle">Sabe uma música com essa palavra?</div>
@@ -66,7 +72,7 @@
 <script>
 const socket = io();
 const $ = id => document.getElementById(id);
-const screens = ['join','wait','tap','raced','psinging','vote','votewait','presult'];
+const screens = ['join','wait','ploading','tap','raced','psinging','vote','votewait','presult'];
 function show(name){ screens.forEach(s => $(s).classList.toggle('active', s === name)); }
 
 let myId = null, myName = '', tapped = false, amWinner = false;
@@ -108,6 +114,9 @@ socket.on('host:left', () => {
   $('joinErr').textContent = 'O host saiu. A sala foi encerrada.';
   $('joinErr').style.display = 'block';
 });
+
+// carregando a palavra
+socket.on('round:loading', () => { tapped = false; amWinner = false; show('ploading'); });
 
 // nova rodada: palavra vira botao gigante
 socket.on('round:start', ({ word }) => {

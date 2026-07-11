@@ -86,6 +86,12 @@
   </div>
 </div>
 
+<!-- LOADING: carregando a palavra -->
+<div id="loading" class="screen">
+  <div class="spinner"></div>
+  <div class="big-word" style="font-size:clamp(28px,6vw,52px)">Sorteando a palavra...</div>
+</div>
+
 <!-- ROUND: palavra + timer -->
 <div id="round" class="screen">
   <div class="subtitle">Cante uma música com...</div>
@@ -139,7 +145,7 @@
 <script>
 const socket = io();
 const $ = id => document.getElementById(id);
-const screens = ['setup','lobby','round','reveal','singing','voting','results'];
+const screens = ['setup','lobby','loading','round','reveal','singing','voting','results'];
 function show(name){
   screens.forEach(s => $(s).classList.toggle('active', s === name));
   $('closeRoom').style.display = name === 'setup' ? 'none' : 'block';
@@ -215,6 +221,9 @@ $('startBtn').onclick = () => socket.emit('host:startRound');
 $('homeBtn').onclick  = () => socket.emit('host:reset');
 $('endVote').onclick  = () => socket.emit('host:endVoting');
 $('skipSing').onclick = () => { clearTimers(); socket.emit('host:startVoting'); };
+
+// ---- LOADING (antes da palavra) ----
+socket.on('round:loading', () => { clearTimers(); show('loading'); });
 
 // ---- ROUND ----
 socket.on('round:start', ({ word }) => {
